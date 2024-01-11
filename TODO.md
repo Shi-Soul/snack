@@ -19,5 +19,5 @@ main.py: import 所有类; 创建类.
 
 ### 24/01/12
 AI :
-每个算法: Trainer, Agent
+每个算法: Trainer, Agent, Buffer
 

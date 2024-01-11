@@ -1,23 +1,40 @@
+
+import torch
+
 from util import load_config, setup_logging, setup_seed, INFO, DEBUG
-from agent import HumanAgent, RandomAgent
+from agent import HumanAgent, RandomAgent, PGAgent
 from env import SnakeEnv
-from runner import BaseRunner
+from runner import BaseRunner, PGTrainer
 from render import TextRender
 CONFIG_FILE = 'cfg.yaml'
 
-def main():
-    params = load_config(CONFIG_FILE)
-    setup_seed(params['seed'])
-    
+def play(params):
     agent = HumanAgent()
-    agent = RandomAgent(1)
+    # agent = RandomAgent(1)
     env = SnakeEnv(params["init_length"], params["size"], params["max_step"], params["penalty"])
     render = TextRender()
-    
     
     runner = BaseRunner(agent, env, render)
     ret = runner.run()
     print(ret)
+    ...
+
+def pg_train(params):
+    # agent = RandomAgent(1)
+    env = SnakeEnv(params["init_length"], params["size"], params["max_step"], params["penalty"])
+    # render = TextRender()
+    
+    runner = PGTrainer(env, params)
+    ret = runner.run()
+    print(ret)
+
+def main():
+    params = load_config(CONFIG_FILE)
+    params['device'] = torch.device("cuda") if torch.cuda.is_available() else torch.device('cpu')
+    
+    setup_seed(params['seed'])
+    
+    pg_train(params)
     
     print("Done!")
     

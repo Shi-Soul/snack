@@ -2,7 +2,7 @@
 
 action_space = ['Left', 'Right', 'Up', 'Down']
 obs_space = (m,size,size) mat
-    * m=4
+    * m=3
     * type: 0 snake_head, 1 food, 2 snake_body, 3 empty;
     * hidden var: snake_length, snake_tail
 reward: 1, PENALTY, 0 (eat, die, move)
@@ -87,13 +87,13 @@ class SnakeEnv():
         next_head = torch.conv2d(state[0].unsqueeze(0), 
                                     self._move_kernel[action],
                                     padding=1)[0]
-        DEBUG("next_head: \n",next_head)
+        # DEBUG("next_head: \n",next_head)
         hit_wall = torch.abs(torch.sum(next_head))<EPS
         hit_body = torch.sum(next_head*state[2])>0
         if hit_wall or hit_body:
             reward = self.penalty
             done = 1
-            DEBUG(f"hit_wall: {hit_wall}, hit_body: {hit_body}")
+            # DEBUG(f"hit_wall: {hit_wall}, hit_body: {hit_body}")
             self.state = state
             return (state, reward, done)
         
@@ -112,11 +112,11 @@ class SnakeEnv():
         else:
             reward = 0
             done = 0
-        DEBUG(f"hit_food: {hit_food}")
+        # DEBUG(f"hit_food: {hit_food}")
         
         if self.time_step == self.max_step:
             done = 1
-            DEBUG(f"timeout")
+            # DEBUG(f"timeout")
             
         self.state = state
         return (state, reward, done)

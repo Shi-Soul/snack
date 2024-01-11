@@ -1,2 +1,7 @@
 from agent.baseagent import * 
-__all__ = ['BaseAgent', 'HumanAgent', 'RandomAgent']
+from agent.pgagent import *
+
+__all__ = [
+    'BaseAgent', 'HumanAgent', 'RandomAgent',
+    'PGAgent',
+]
