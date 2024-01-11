@@ -84,17 +84,17 @@ class SnakeEnv():
         self.time_step += 1
         
         state = self.state
-        next_head = torch.conv2d(self.state[0].unsqueeze(0), 
+        next_head = torch.conv2d(state[0].unsqueeze(0), 
                                     self._move_kernel[action],
                                     padding=1)[0]
         DEBUG("next_head: \n",next_head)
         hit_wall = torch.abs(torch.sum(next_head))<EPS
-        hit_body = torch.sum(next_head*self.state[2])>0
+        hit_body = torch.sum(next_head*state[2])>0
         if hit_wall or hit_body:
-            self.state = state
             reward = self.penalty
             done = 1
             DEBUG(f"hit_wall: {hit_wall}, hit_body: {hit_body}")
+            self.state = state
             return (state, reward, done)
         
         # Move body
@@ -102,7 +102,7 @@ class SnakeEnv():
         state[2] = np.clip(state[2] - 1, 0, None) + state[0]*self.current_length
         
         # Hit food
-        hit_food = torch.sum(next_head*self.state[1])>0
+        hit_food = torch.sum(next_head*state[1])>0
         if hit_food:
             state[1] = torch.zeros_like(state[1]) # remove food
             state = self._generate_food(state)
@@ -118,6 +118,7 @@ class SnakeEnv():
             done = 1
             DEBUG(f"timeout")
             
+        self.state = state
         return (state, reward, done)
         
     def get_hidden_state(self) -> Tuple[OBS, int, int]:

@@ -15,19 +15,18 @@ class BaseRunner():
         """
         rewards: Sequence[int] = []
         obs, reward, done = self.env.reset()
-        while not done:
-            self.render.render(obs)
-            try:
+        try:
+            while not done:
+                self.render.render(obs,self.env.time_step)
                 action = self.agent.policy(obs)
-            except KeyboardInterrupt:
-                INFO("\nUser Quit!")
-                break
-            DEBUG(f"action: {action}")
+                DEBUG(f"action: {action}")
+                
+                obs, reward, done = self.env.step(action)
+                DEBUG(f"reward: {reward}, done: {done}")
             
-            obs, reward, done = self.env.step(action)
-            DEBUG(f"reward: {reward}, done: {done}")
-            
-            rewards.append(reward)
+                rewards.append(reward)
+        except KeyboardInterrupt:
+            INFO("\nUser Quit!")
         _,time_step,snake_length = self.env.get_hidden_state()
         return sum(rewards), time_step, snake_length
         

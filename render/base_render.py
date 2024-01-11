@@ -2,14 +2,14 @@ import numpy as np
 from util import ACT, OBS, RET, INFO, DEBUG
 
 class BaseRender():
-    def render(self, state: OBS)->None: 
+    def render(self, state: OBS, time_step:int)->None: 
         raise NotImplementedError
     
     
 class TextRender(BaseRender):
     def __init__(self, cls=True):
         self.cls = cls
-    def render(self, state: OBS)->None: 
+    def render(self, state: OBS,  time_step:int)->None: 
         # print("Current State:")
         if self.cls:
             print('\033c',end='')
@@ -31,3 +31,4 @@ class TextRender(BaseRender):
         
         print("-----"*(5+shape[1]))
         print("F for Food, H for Head, B for Snake Body")
+        print("Time step: ", time_step)

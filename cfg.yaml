@@ -1,5 +1,9 @@
+
+seed: 2
+
+
+# Env Related
 size: 5
 init_length: 2
 max_step: 100
 penalty: -10
-seed: 1

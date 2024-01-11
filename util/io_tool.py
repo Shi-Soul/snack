@@ -9,7 +9,7 @@ import numpy as np
 import random
 from pprint import pprint
 
-DEBUG_ON = False
+DEBUG_ON = True
 
 def __get_time_idx():
     return time.strftime("%d%H%M%S", time.localtime())

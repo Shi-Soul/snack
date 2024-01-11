@@ -10,7 +10,7 @@ def main():
     setup_seed(params['seed'])
     
     agent = HumanAgent()
-    agent = RandomAgent()
+    agent = RandomAgent(1)
     env = SnakeEnv(params["init_length"], params["size"], params["max_step"], params["penalty"])
     render = TextRender()
     
