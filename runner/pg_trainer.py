@@ -58,7 +58,7 @@ class PGTrainer(BaseRunner):
         self.gamma = 0.99
         self.eps = 1e-6
         self.epsilon = 0.1
-        self.lr = 1e-4
+        self.lr = 1e-3
         self.num_episodes = 200
         self.buffer_size = 300
         
@@ -133,10 +133,10 @@ class PGTrainer(BaseRunner):
         # Sample episodes from buffer
         # Calculate loss
         # Update policy
-        loss_sum = 0
+        
+        loss = torch.tensor([0], dtype=torch.float32, device=self.device)
         for _ in range(self.update_steps):
             indices = np.random.randint(0, len(self.buffer))
-            # loss = torch.tensor([0], dtype=torch.float32, device=self.device)
             # 优化: 用矩阵运算代替循环
             eps_state, eps_action, _, eps_reward = self.buffer[indices]
             
@@ -153,12 +153,13 @@ class PGTrainer(BaseRunner):
             log_prob = torch.log(action_prob[torch.arange(N),torch.tensor(eps_action)])
                 
             loss = -torch.sum(log_prob * reward_to_go)
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
-            loss_sum += loss.item()
-        assert not np.isnan(loss_sum), 'loss_sum is nan'
-        return loss_sum / self.update_steps
+        loss = loss / self.update_steps
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+        # loss_sum += loss.item()
+        assert not np.isnan(loss.item()), 'loss is nan'
+        return loss.item()
         
     def train_step(self):
         for episode in range(self.num_episodes):
