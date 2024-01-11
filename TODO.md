@@ -6,7 +6,7 @@
 - [ ] Game Env (被动, 拿到act, 给出obs, reward, done)  
   - [ ] 对象自行管理state & obs & step
   - [ ] 状态空间; 动作空间; 
-  - [ ] 奖励函数; 重置函数; 渲染函数;
+  - [ ] reset() : 重置状态
   - [ ] step(act) : 根据act给出obs, reward, done
 - [ ] Runner & Trainer (手持env和agent, 用于训练agent & 运行游戏)
   - [ ] run(env,agent) : 用于运行游戏
