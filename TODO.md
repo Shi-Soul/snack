@@ -3,11 +3,11 @@
 - [ ] Agent(给定决策rule, 根据obs 给出act)
   - [ ] policy(obs) : 根据obs给出act prob
   - [ ] Human Agent, Dummy Agent. 
-- [ ] Game Env (被动, 拿到act, 给出obs, reward, done)  
-  - [ ] 对象自行管理state & obs & step
-  - [ ] 状态空间; 动作空间; 
-  - [ ] reset() : 重置状态
-  - [ ] step(act) : 根据act给出obs, reward, done
+- [x] Game Env (被动, 拿到act, 给出obs, reward, done)  
+  - [x] 对象自行管理state & obs & step
+  - [x] 状态空间; 动作空间; 
+  - [x] reset() : 重置状态
+  - [x] step(act) : 根据act给出obs, reward, done
 - [ ] Runner & Trainer (手持env和agent, 用于训练agent & 运行游戏)
   - [ ] run(env,agent) : 用于运行游戏
 - [ ] Render (渲染器, 用于渲染游戏): 文字渲染, 图形渲染, 视频渲染

@@ -9,17 +9,14 @@ reward: 1, -1, 0 (eat, die, move)
 done  : timeout, die
 
 die: hit wall, hit body 
+
 """
 from typing import Union, NewType, Tuple
 import numpy as np
 import torch
 
-ACT = int
-# OBS = np.ndarray
-OBS = torch.Tensor
-REWARD = int
-DONE = int
-RET = Tuple[OBS, REWARD, DONE]
+from util import ACT, OBS, RET
+
 
 class SnakeEnv():
     def __init__(self, init_length = 5, size=10, max_step=100):
