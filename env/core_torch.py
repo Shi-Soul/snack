@@ -11,7 +11,7 @@ done  : timeout, die
 die: hit wall, hit body 
 
 """
-from typing import Union, NewType, Tuple
+from typing import Any, Union, NewType, Tuple
 import numpy as np
 import torch
 
@@ -30,10 +30,10 @@ class SnakeEnv():
         self.current_length = 0
         
         self._move_kernel ={
-            0: torch.tensor([[0,0,0],[1,0,0],[0,0,0]]).flip(dims=(-2,-1)).reshape(1,1,3,3),
-            1: torch.tensor([[0,0,0],[0,0,1],[0,0,0]]).flip(dims=(-2,-1)).reshape(1,1,3,3),
-            2: torch.tensor([[0,1,0],[0,0,0],[0,0,0]]).flip(dims=(-2,-1)).reshape(1,1,3,3),
-            3: torch.tensor([[0,0,0],[0,0,0],[0,1,0]]).flip(dims=(-2,-1)).reshape(1,1,3,3),
+            0: torch.tensor([[0,0,0],[1,0,0],[0,0,0]],dtype=torch.float32).flip(dims=(-2,-1)).reshape(1,1,3,3),
+            1: torch.tensor([[0,0,0],[0,0,1],[0,0,0]],dtype=torch.float32).flip(dims=(-2,-1)).reshape(1,1,3,3),
+            2: torch.tensor([[0,1,0],[0,0,0],[0,0,0]],dtype=torch.float32).flip(dims=(-2,-1)).reshape(1,1,3,3),
+            3: torch.tensor([[0,0,0],[0,0,0],[0,1,0]],dtype=torch.float32).flip(dims=(-2,-1)).reshape(1,1,3,3),
         }
         
         self._edge_mat = torch.zeros((self.size, self.size))
@@ -83,7 +83,9 @@ class SnakeEnv():
         self.time_step += 1
         
         state = self.state
-        next_head = torch.conv2d(self.state[0].unsqueeze(0), self._move_kernel[action])
+        next_head = torch.conv2d(self.state[0].unsqueeze(0), 
+                                    self._move_kernel[action],
+                                    padding=1)[0]
         
         hit_wall = torch.sum(self.state[0]*self._edge_mat)>0
         hit_body = torch.sum(next_head*self.state[2])>0
@@ -113,6 +115,9 @@ class SnakeEnv():
             done = 1
             
         return (state, reward, done)
+        
+    def get_hidden_state(self) -> Tuple[OBS, int, int]:
+        return (self.state, self.time_step, self.current_length)
         
     def _generate_food(self, state: OBS) -> OBS:
         x, y = np.random.randint(0, self.size, 2)

@@ -1,5 +1,6 @@
 import time
 import os
+import torch
 import sys
 import os.path as osp
 from absl import flags
@@ -60,3 +61,11 @@ def setup_logging(expname="n"):
 
     logging.info(f"Sys Argv: {' '.join(sys.argv)}")
     return osp.dirname(filename)
+
+def setup_seed(seed:int=0):
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    # torch.backends.cudnn.deterministic = True
+    # torch.backends.cudnn.benchmark = False

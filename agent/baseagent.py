@@ -1,5 +1,6 @@
 from util import ACT, OBS, RET, INFO, DEBUG
 import numpy as np
+
 class BaseAgent():
     def policy(self, state: OBS) -> (ACT):
         raise NotImplementedError("policy method not implemented")
