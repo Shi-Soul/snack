@@ -15,7 +15,11 @@ class BaseRunner():
         rewards: Sequence[int] = []
         obs, reward, done = self.env.reset()
         while not done:
-            action = self.agent.policy(obs)
+            try:
+                action = self.agent.policy(obs)
+            except KeyboardInterrupt:
+                INFO("\nUser Quit!")
+                break
             DEBUG(f"action: {action}")
             
             obs, reward, done = self.env.step(action)

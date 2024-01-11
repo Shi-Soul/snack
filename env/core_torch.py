@@ -5,7 +5,7 @@ obs_space = (m,size,size) mat
     * m=4
     * type: 0 snake_head, 1 food, 2 snake_body, 3 empty;
     * hidden var: snake_length, snake_tail
-reward: 1, -1, 0 (eat, die, move)
+reward: 1, PENALTY, 0 (eat, die, move)
 done  : timeout, die
 
 die: hit wall, hit body 
@@ -15,14 +15,15 @@ from typing import Any, Union, NewType, Tuple
 import numpy as np
 import torch
 
-from util import ACT, OBS, RET
-
+from util import ACT, OBS, RET, INFO, DEBUG
+EPS=1e-6
 
 class SnakeEnv():
-    def __init__(self, init_length = 5, size=10, max_step=100):
+    def __init__(self, init_length = 5, size=10, max_step=100, penalty=-10):
         self.init_length = init_length
         self.size = size
         self.max_step = max_step
+        self.penalty = penalty
         
         # Current State
         self.state = torch.tensor([])
@@ -86,13 +87,14 @@ class SnakeEnv():
         next_head = torch.conv2d(self.state[0].unsqueeze(0), 
                                     self._move_kernel[action],
                                     padding=1)[0]
-        
-        hit_wall = torch.sum(self.state[0]*self._edge_mat)>0
+        DEBUG("next_head: \n",next_head)
+        hit_wall = torch.abs(torch.sum(next_head))<EPS
         hit_body = torch.sum(next_head*self.state[2])>0
         if hit_wall or hit_body:
             self.state = state
-            reward = -1
+            reward = self.penalty
             done = 1
+            DEBUG(f"hit_wall: {hit_wall}, hit_body: {hit_body}")
             return (state, reward, done)
         
         # Move body
@@ -110,9 +112,11 @@ class SnakeEnv():
         else:
             reward = 0
             done = 0
-            
+        DEBUG(f"hit_food: {hit_food}")
+        
         if self.time_step == self.max_step:
             done = 1
+            DEBUG(f"timeout")
             
         return (state, reward, done)
         

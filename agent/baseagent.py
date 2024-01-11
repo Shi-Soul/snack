@@ -9,10 +9,11 @@ class HumanAgent(BaseAgent):
     def policy(self,state:OBS) -> (ACT):
         self._print_state(state)
         print("Action: {0: 'Left', 1:'Right', 2:'Up', 3:'Down'}")
-        action = input("Please input your action:")
+        print("Action Alias: {0: 'a', 1:'d', 2:'w', 3:'s'}")
+        action = input("Please input your action:").replace("a","0").replace("d","1").replace("w","2").replace("s","3")
         while not action.isdecimal() or not int(action) in [0,1,2,3]:
             print("Invalid Action")
-            action = input("Please input your action:")
+            action = input("Please input your action:").replace("a","0").replace("d","1").replace("w","2").replace("s","3")
         return int(action)
 
     def _print_state(self, state: OBS)->None: 

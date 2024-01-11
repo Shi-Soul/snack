@@ -9,7 +9,7 @@ def main():
     setup_seed(params['seed'])
     
     agent = HumanAgent()
-    env = SnakeEnv(params["init_length"], params["size"], params["max_step"])
+    env = SnakeEnv(params["init_length"], params["size"], params["max_step"], params["penalty"])
     runner = BaseRunner(agent, env)
     ret = runner.run()
     print(ret)

@@ -4,6 +4,6 @@ from typing import Tuple
 ACT = int
 # OBS = np.ndarray
 OBS = torch.Tensor
-REWARD = int
+REW = int
 DONE = int
-RET = Tuple[OBS, REWARD, DONE]
+RET = Tuple[OBS, REW, DONE]
