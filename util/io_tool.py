@@ -10,6 +10,7 @@ import random
 from pprint import pprint
 
 DEBUG_ON = True
+LOG_DIR = ""
 
 def __get_time_idx():
     return time.strftime("%d%H%M%S", time.localtime())
@@ -50,6 +51,7 @@ def setup_logging(expname="n"):
     
     if not osp.exists(osp.dirname(filename)):
         os.makedirs(osp.dirname(filename))
+        
 
     logger = logging.getLogger()
     file_handler = logging.FileHandler(filename)
@@ -63,6 +65,8 @@ def setup_logging(expname="n"):
     
 
     logging.info(f"Sys Argv: {' '.join(sys.argv)}")
+    global LOG_DIR
+    LOG_DIR = osp.dirname(filename)
     return osp.dirname(filename)
 
 def setup_seed(seed:int=0):

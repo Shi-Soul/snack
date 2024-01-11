@@ -1,6 +1,6 @@
 
 seed: 2
-
+use_tb_logger: True
 
 # Env Related
 obs_channel: 3
@@ -10,6 +10,7 @@ max_step: 100
 penalty: -10
 
 # Algo Related
+pg_net: "small" # small, normal, large
 train_epoch: 100
-update_steps: 100
+update_steps: 10
 test_freq: 10

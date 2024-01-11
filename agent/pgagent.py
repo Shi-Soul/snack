@@ -34,7 +34,7 @@ class PGAgent(BaseAgent):
         # N = state.shape[0]
         state = state.to(self.device)
         action_prob:torch.Tensor = self.model(state)
-        
+        action_prob = torch.softmax(action_prob,dim=-1)
         # action = action_prob.argmax(-1).item()
         # if self.is_train:
         #     # epsilon greedy

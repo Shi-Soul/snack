@@ -10,28 +10,30 @@ import yaml
 from datetime import datetime
 from collections import deque
 
-from util import INFO, DEBUG
+from util import INFO, DEBUG, TBLogger
 from runner import BaseRunner
 from agent import PGAgent
 
-class PGTrainer(BaseRunner):
-    def __init__(self, env, config):
-        self.device = config['device']
-        self.train_epoch = config['train_epoch']
-        self.update_steps = config['update_steps']
-        self.test_freq = config['test_freq']
-        self.gamma = 0.99
-        self.eps = 1e-6
-        self.epsilon = 0.1
-        self.lr = 1e-3
-        self.num_episodes = 1000
-        self.buffer_size = 1000
-        
-        self.env = env
-        
-        policy_net = nn.Sequential(
+def _get_nn_small(out_channel):
+    policy_net = nn.Sequential(
             # Input: (batch_size, 3, 5, 5)
-            nn.Conv2d(in_channels=config['obs_channel'], out_channels=16,
+            nn.Conv2d(in_channels=out_channel, out_channels=16,
+                        kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+                    # (batch_size, 16, 2, 2)
+            nn.Flatten(),
+                    # (batch_size, 16*2*2)
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, 4),
+        )
+    return policy_net
+
+def _get_nn_normal(out_channel):
+    policy_net = nn.Sequential(
+            # Input: (batch_size, 3, 5, 5)
+            nn.Conv2d(in_channels=out_channel, out_channels=16,
                         kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
@@ -43,6 +45,26 @@ class PGTrainer(BaseRunner):
             nn.ReLU(),
             nn.Linear(64, 4),
         )
+    return policy_net
+
+
+class PGTrainer(BaseRunner):
+    def __init__(self, env, config):
+        self.device = config['device']
+        self.use_tb = config['use_tb_logger']
+        self.train_epoch = config['train_epoch']
+        self.update_steps = config['update_steps']
+        self.test_freq = config['test_freq']
+        self.gamma = 0.99
+        self.eps = 1e-6
+        self.epsilon = 0.1
+        self.lr = 1e-4
+        self.num_episodes = 200
+        self.buffer_size = 300
+        
+        self.env = env
+        
+        policy_net = _get_nn_small(config['obs_channel'])
         
         self.agent = PGAgent(policy_net, self.device, epsilon=self.epsilon)
         self.agent.train(True)
@@ -50,23 +72,34 @@ class PGTrainer(BaseRunner):
         self.optimizer = torch.optim.Adam(policy_net.parameters(), lr=self.lr)
         
         self.buffer = deque(maxlen=self.buffer_size)
+        
+        if self.use_tb:
+            self.tb_logger = TBLogger()
 
     def run(self):
         loss_list = []
         score_mean_list = []
         score_std_list = []
-        for epoch in range(self.train_epoch):
-            loss = self.train_step()
-            loss_list.append(loss)
-            
-            if epoch % self.test_freq == 0 or epoch == self.train_epoch - 1:
-                score_mean, score_std = self.test()
-                score_mean_list.append(score_mean)
-                score_std_list.append(score_std)
-                INFO(f'Epoch: {epoch}, score: {score_mean:.3f} +- {score_std:.3f}')
+        try:
+            for epoch in range(self.train_epoch):
+                loss = self.train_step()
+                loss_list.append(loss)
                 
+                if self.use_tb:
+                    self.tb_logger.log_scalar(loss, 'loss', epoch)
+                
+                if epoch % self.test_freq == 0 or epoch == self.train_epoch - 1:
+                    score_mean, score_std = self.test()
+                    score_mean_list.append(score_mean)
+                    score_std_list.append(score_std)
+                    if self.use_tb:
+                        self.tb_logger.log_scalar(score_mean, 'score_mean', epoch)
+                        self.tb_logger.log_scalar(score_std, 'score_std', epoch)
+                    INFO(f'Epoch: {epoch}, score: {score_mean:.3f} +- {score_std:.3f}')
+        except KeyboardInterrupt:
+            INFO("Training interrupted.")
         result = {'loss': loss_list, 'score_mean': score_mean_list, 'score_std': score_std_list}
-        INFO(result,pp=True)
+        # INFO(result,pp=True)
         INFO("Training finished.")
         return result
 
@@ -124,7 +157,7 @@ class PGTrainer(BaseRunner):
             loss.backward()
             self.optimizer.step()
             loss_sum += loss.item()
-        
+        assert not np.isnan(loss_sum), 'loss_sum is nan'
         return loss_sum / self.update_steps
         
     def train_step(self):
@@ -133,7 +166,7 @@ class PGTrainer(BaseRunner):
                 
             self.buffer.append((eps_state, eps_action, eps_action_prob, eps_reward))
         loss = self._update()
-        pass
+        return loss
 
     def test(self):
         score = []

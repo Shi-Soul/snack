@@ -20,6 +20,7 @@ def play(params):
     ...
 
 def pg_train(params):
+    setup_logging("pg_debug")
     # agent = RandomAgent(1)
     env = SnakeEnv(params["init_length"], params["size"], params["max_step"], params["penalty"])
     # render = TextRender()
