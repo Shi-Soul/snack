@@ -2,6 +2,7 @@ from util import load_config, setup_logging, setup_seed, INFO, DEBUG
 from agent import HumanAgent, RandomAgent
 from env import SnakeEnv
 from runner import BaseRunner
+from render import TextRender
 CONFIG_FILE = 'cfg.yaml'
 
 def main():
@@ -9,8 +10,12 @@ def main():
     setup_seed(params['seed'])
     
     agent = HumanAgent()
+    agent = RandomAgent()
     env = SnakeEnv(params["init_length"], params["size"], params["max_step"], params["penalty"])
-    runner = BaseRunner(agent, env)
+    render = TextRender()
+    
+    
+    runner = BaseRunner(agent, env, render)
     ret = runner.run()
     print(ret)
     

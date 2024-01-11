@@ -1,9 +1,10 @@
 from typing import Sequence
 from util import DEBUG,INFO
 class BaseRunner():
-    def __init__(self, agent, env, *args, **kwargs):
+    def __init__(self, agent, env, render, *args, **kwargs):
         self.agent = agent
         self.env = env
+        self.render = render
         
     def run(self):
         """
@@ -15,6 +16,7 @@ class BaseRunner():
         rewards: Sequence[int] = []
         obs, reward, done = self.env.reset()
         while not done:
+            self.render.render(obs)
             try:
                 action = self.agent.policy(obs)
             except KeyboardInterrupt:

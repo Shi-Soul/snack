@@ -9,6 +9,8 @@ import numpy as np
 import random
 from pprint import pprint
 
+DEBUG_ON = False
+
 def __get_time_idx():
     return time.strftime("%d%H%M%S", time.localtime())
 
@@ -31,6 +33,7 @@ def DEBUG(*args,pp=False):
     print debug information to console and log file
     pp: pretty print
     """
+    if not DEBUG_ON: return
     sent = "DEBUG: " + " ".join([str(arg) for arg in args])
     if pp:
         print("DEBUG: ", end="\n")
