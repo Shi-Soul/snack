@@ -11,10 +11,12 @@ class TBLogger:
     def log_scalar(self, scalar, name, step_):
         self._summ_writer.add_scalar('{}'.format(name), scalar, step_)
 
-    def log_scalars(self, scalar_dict, group_name, step, phase):
+    def log_scalars(self, scalar_dict, group_name, step):
         """Will log all scalars in the same plot."""
-        self._summ_writer.add_scalars('{}_{}'.format(group_name, phase) if phase else group_name, \
-                                        scalar_dict, step)
+        for k, v in scalar_dict.items():
+            self._summ_writer.add_scalar('{}/{}'.format(group_name, k), v, step)
+        # self._summ_writer.add_scalars('{}_{}'.format(group_name, phase) if phase else group_name, \
+        #                                 scalar_dict, step)
 
     def log_image(self, image, name, step):
         assert(len(image.shape) == 3)  # [C, H, W]

@@ -50,21 +50,23 @@ def _get_nn_normal(out_channel):
 
 class PGTrainer(BaseRunner):
     def __init__(self, env, config):
+        self.log_dir = config['log_dir']
         self.device = config['device']
         self.use_tb = config['use_tb_logger']
         self.train_epoch = config['train_epoch']
         self.update_steps = config['update_steps']
         self.test_freq = config['test_freq']
-        self.gamma = 0.99
-        self.eps = 1e-6
-        self.epsilon = 0.1
-        self.lr = 1e-3
-        self.num_episodes = 200
-        self.buffer_size = 300
+        self.gamma = config["pg_gamma"]
+        # self.eps = 1e-6
+        self.epsilon = config['pg_epsilon']
+        self.lr = config['pg_lr']
+        self.num_episodes = config['pg_num_episodes']
+        self.buffer_size = config['pg_buffer_size']
+        
         
         self.env = env
         
-        policy_net = _get_nn_small(config['obs_channel'])
+        policy_net = _get_nn_small(config['obs_channel']).to(self.device)
         
         self.agent = PGAgent(policy_net, self.device, epsilon=self.epsilon)
         self.agent.train(True)
@@ -77,9 +79,12 @@ class PGTrainer(BaseRunner):
             self.tb_logger = TBLogger()
 
     def run(self):
+        best_score = -np.inf
         loss_list = []
         score_mean_list = []
         score_std_list = []
+        time_step_list = []
+        snake_length_list = []
         try:
             for epoch in range(self.train_epoch):
                 loss = self.train_step()
@@ -89,15 +94,30 @@ class PGTrainer(BaseRunner):
                     self.tb_logger.log_scalar(loss, 'loss', epoch)
                 
                 if epoch % self.test_freq == 0 or epoch == self.train_epoch - 1:
-                    score_mean, score_std = self.test()
+                    # score_mean, score_std = self.test()
+                    score_mean, score_std, time_step, snake_length = self.test()
                     score_mean_list.append(score_mean)
                     score_std_list.append(score_std)
+                    time_step_list.append(time_step)
+                    snake_length_list.append(snake_length)
+                    
+                    if score_mean > best_score:
+                        best_score = score_mean
+                        self.save_model(epoch, score_mean, score_std)
+                    
                     if self.use_tb:
-                        self.tb_logger.log_scalar(score_mean, 'score_mean', epoch)
-                        self.tb_logger.log_scalar(score_std, 'score_std', epoch)
+                        # self.tb_logger.log_scalar(score_mean, 'score_mean', epoch)
+                        # self.tb_logger.log_scalar(score_std, 'score_std', epoch)
+                        self.tb_logger.log_scalars({
+                            "score_mean": score_mean,
+                            "score_std": score_std,
+                            "time_step": time_step,
+                            "snake_length": snake_length
+                            }, 'eval', epoch)
                     INFO(f'Epoch: {epoch}, score: {score_mean:.3f} +- {score_std:.3f}')
         except KeyboardInterrupt:
             INFO("Training interrupted.")
+        self.save_model(-1,score_mean_list[-1],score_std_list[-1])
         result = {'loss': loss_list, 'score_mean': score_mean_list, 'score_std': score_std_list}
         # INFO(result,pp=True)
         INFO("Training finished.")
@@ -126,9 +146,19 @@ class PGTrainer(BaseRunner):
             eps_reward.append(reward)
             
             state = next_state
-        return eps_state, eps_action, eps_action_prob, eps_reward
+        _,time_step,snake_length = self.env.get_hidden_state()
+        return eps_state, eps_action, eps_action_prob, eps_reward, time_step, snake_length
         # return eps_state, eps_action, eps_reward
 
+    def get_nstep_reward(self, eps_reward):
+        reward_to_go = torch.zeros_like(eps_reward, dtype=torch.float32, device=self.device)
+        N = len(eps_reward)
+        j = N - 1
+        while j >= 0:
+            reward_to_go[j-1] = eps_reward[j] + self.gamma * reward_to_go[j]
+            j -= 1
+        return reward_to_go
+    
     def _update(self):
         # Sample episodes from buffer
         # Calculate loss
@@ -137,22 +167,17 @@ class PGTrainer(BaseRunner):
         loss = torch.tensor([0], dtype=torch.float32, device=self.device)
         for _ in range(self.update_steps):
             indices = np.random.randint(0, len(self.buffer))
-            # 优化: 用矩阵运算代替循环
             eps_state, eps_action, _, eps_reward = self.buffer[indices]
             
-            # Compute reward to go
             eps_reward = torch.tensor(eps_reward, dtype=torch.float32, device=self.device)
-            reward_to_go = torch.zeros_like(eps_reward, dtype=torch.float32, device=self.device)
-            N = len(eps_reward)
-            j = N - 1
-            while j >= 0:
-                reward_to_go[j-1] = eps_reward[j] + self.gamma * reward_to_go[j]
-                j -= 1
-            # DEBUG(torch.concat(eps_state).shape)
+            reward_to_go = self.get_nstep_reward(eps_reward)
+            
             action_prob = self.agent.policy_prob(torch.concat(eps_state))
+            N = len(eps_reward)
             log_prob = torch.log(action_prob[torch.arange(N),torch.tensor(eps_action)])
                 
-            loss = -torch.sum(log_prob * reward_to_go)
+            loss += -torch.sum(log_prob * reward_to_go)
+            
         loss = loss / self.update_steps
         self.optimizer.zero_grad()
         loss.backward()
@@ -162,22 +187,36 @@ class PGTrainer(BaseRunner):
         return loss.item()
         
     def train_step(self):
+        self.agent.train(True)
         for episode in range(self.num_episodes):
-            eps_state, eps_action, eps_action_prob, eps_reward = self.sample_episode()
+            eps_state, eps_action, eps_action_prob, eps_reward, _,_ = self.sample_episode()
                 
             self.buffer.append((eps_state, eps_action, eps_action_prob, eps_reward))
         loss = self._update()
         return loss
 
-    def test(self):
+
+    def test(self,N=100):
+        self.agent.train(False)
         score = []
-        for episode in range(100):
+        time_step = []
+        snake_length = []
+        for episode in range(N):
             sample = self.sample_episode()
             score.append(sum(sample[3]))
+            time_step.append(sample[4])
+            snake_length.append(sample[5])
         score = np.array(score)
-        mean, std = score.mean(), score.std()
-        return mean, std
+        s_mean, std = score.mean(), score.std()
+        return s_mean, std, sum(time_step)/N, sum(snake_length)/N
 
+    def save_model(self, epoch, score_mean, score_std):
+        model_path = os.path.join(self.log_dir,'model',
+                                  f'pg_{epoch}_{score_mean:.3f}_{score_std:.3f}.pth')
+        if not os.path.exists(os.path.dirname(model_path)):
+            os.makedirs(os.path.dirname(model_path))
+        torch.save(self.agent.model.state_dict(), model_path)
+        INFO(f'Save model to {model_path}')
 
 
 

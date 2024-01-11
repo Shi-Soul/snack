@@ -31,7 +31,7 @@ class RandomAgent(BaseAgent):
             }
         
     def policy(self,state:OBS) -> (ACT):
-        time.sleep(0.5)
+        # time.sleep(0.5)
         action = np.random.randint(0,4)
         if(self.type>0):
             while not (self._check_action(state,action)):

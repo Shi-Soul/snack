@@ -1,4 +1,5 @@
 import numpy as np
+import time
 from util import ACT, OBS, RET, INFO, DEBUG
 
 class BaseRender():
@@ -11,6 +12,7 @@ class TextRender(BaseRender):
         self.cls = cls
     def render(self, state: OBS,  time_step:int)->None: 
         # print("Current State:")
+        time.sleep(0.5)
         if self.cls:
             print('\033c',end='')
         shape=state[0].shape 

@@ -1,4 +1,5 @@
 import yaml
+import os
 def load_config(yaml_path:str)-> dict:
     try:
         with open(yaml_path, 'r') as f:
@@ -9,3 +10,8 @@ def load_config(yaml_path:str)-> dict:
             params = yaml.load(f, Loader=yaml.FullLoader)
     # print(params,params.__class__);exit(0)
     return params
+
+def save_config(dict_value: dict, save_path: str):
+    """dict保存为yaml"""
+    with open(os.path.join(save_path,"cfg.yaml"), 'w') as file:
+        file.write(yaml.dump(dict_value, allow_unicode=True))
