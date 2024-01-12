@@ -97,12 +97,13 @@ class SnakeEnv():
             self.state = state
             return (state, reward, done)
         
-        # Move body
-        state[0] = next_head
-        state[2] = np.clip(state[2] - 1, 0, None) + state[0]*self.current_length
-        
         # Hit food
         hit_food = torch.sum(next_head*state[1])>0
+        
+        # Move body
+        state[0] = next_head
+        state[2] = np.clip(state[2] - (1- (hit_food).to(torch.float32)), 0, None) + state[0]*self.current_length
+        
         if hit_food:
             state[1] = torch.zeros_like(state[1]) # remove food
             state = self._generate_food(state)
