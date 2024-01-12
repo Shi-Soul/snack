@@ -13,11 +13,12 @@
 - [x] Render (渲染器, 用于渲染游戏): 文字渲染, 图形渲染, 视频渲染
   - [x] render(obs) : 用于渲染游戏
 
-util : debug 工具
-cfg  : 超参数, 环境变量. 仅由main.py读取, 用于初始化.
-main.py: import 所有类; 创建类.
+工具代码
+- [x] util: debug 工具
+- [x] cfg : 超参数, 环境变量. 仅由main.py读取, 用于初始化.
+- [x] main.py: import 所有类; 创建类.
 
 ### 24/01/12
 AI :
 每个算法: Trainer, Agent, Buffer
-
+- [x] Simple Policy Gradient

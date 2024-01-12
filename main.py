@@ -13,7 +13,7 @@ def play(params):
     # agent = RandomAgent(1)
     from runner.pg_trainer import _get_nn_small, _get_nn_normal
     agent = PGAgent(_get_nn_small(params['obs_channel']), params['device'])
-    agent.load_model("/home/wjxie/wjxie/env/snack/result/pg_t3_11193730/model/pg_90_-1.470_3.659.pth")
+    agent.load_model("/home/wjxie/wjxie/env/snack/result/pg_t3_12025732/model/pg_150_-0.270_2.004.pth")
     agent.train(False)
     
     env = SnakeEnv(params["init_length"], params["size"], params["max_step"], params["penalty"])

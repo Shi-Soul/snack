@@ -37,10 +37,12 @@ def _get_nn_normal(out_channel):
             nn.Conv2d(in_channels=out_channel, out_channels=16,
                         kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
+            nn.Dropout(0.2),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1),
                     # (batch_size, 32, 2, 2)
             nn.Flatten(),
+            nn.Dropout(0.2),
                     # (batch_size, 32*2*2)
             nn.Linear(128, 64),
             nn.ReLU(),
@@ -58,16 +60,19 @@ class PGTrainer(BaseRunner):
         self.update_steps = config['update_steps']
         self.test_freq = config['test_freq']
         self.gamma = config["pg_gamma"]
-        self.eps = 1e-6
+        self.eps = 1e-10
         self.epsilon = config['pg_epsilon']
         self.lr = config['pg_lr']
         self.num_episodes = config['pg_num_episodes']
         self.buffer_size = config['pg_buffer_size']
+        self._reward_baseline = 0.1
         
         
         self.env = env
-        
-        policy_net = _get_nn_small(config['obs_channel']).to(self.device)
+        if config['pg_net'] == 'small':
+            policy_net = _get_nn_small(config['obs_channel']).to(self.device)
+        elif config['pg_net'] == 'normal':
+            policy_net = _get_nn_normal(config['obs_channel']).to(self.device)
         
         self.agent = PGAgent(policy_net, self.device, epsilon=self.epsilon)
         self.agent.train(True)
@@ -171,14 +176,13 @@ class PGTrainer(BaseRunner):
             eps_state, eps_action, _, eps_reward = self.buffer[indices]
             
             eps_reward = torch.tensor(eps_reward, dtype=torch.float32, device=self.device)
-            reward_to_go = self.get_nstep_reward(eps_reward)
+            reward_to_go = self.get_nstep_reward(eps_reward) + self._reward_baseline
             
             action_prob = self.agent.policy_prob(torch.concat(eps_state))
             N = len(eps_reward)
             log_prob = torch.log(torch.clip(
                 action_prob[torch.arange(N),torch.tensor(eps_action)],
                 self.eps))
-                
             loss += -torch.sum(log_prob * reward_to_go)
             
         loss = loss / self.update_steps

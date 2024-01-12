@@ -1,4 +1,4 @@
-exp_name: 'pg_t3'
+exp_name: 'pg_t4'
 seed: 9
 use_tb_logger: True
 
@@ -15,9 +15,9 @@ update_steps: 200 # More precisely, batch_size
 test_freq: 30
 pg_num_episodes: 100
 pg_buffer_size: 200
-pg_net: "small" # small, normal, large
-pg_epsilon: 0.003
+pg_net: "normal" # small, normal, large
+pg_epsilon: 0.01
 pg_gamma: 0.95
 
-pg_lr: 0.0015
+pg_lr: 0.001
 
