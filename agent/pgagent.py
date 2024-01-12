@@ -8,13 +8,16 @@ import numpy as np
 class PGAgent(BaseAgent):
     def __init__(self, model: nn.Module, device, epsilon=0.1):
         self.model = model
+        self.model.to(device)
         self.device = device
         self.epsilon = epsilon
         
         self.is_train = False
+        self.use_argmax = False
         
     def policy(self, state):
-                
+        if len(state.shape) == 3:
+            state = state.unsqueeze(0)
         if self.is_train:
             # epsilon greedy
             if np.random.rand() < self.epsilon:
@@ -23,7 +26,11 @@ class PGAgent(BaseAgent):
             
         state = state.to(self.device)
         action_prob = self.model(state)
-        action = action_prob.argmax().item()
+        action_prob = torch.softmax(action_prob,dim=-1)
+        if self.use_argmax:
+            action = action_prob.argmax().item()
+        else:
+            action = np.random.choice(4, p=action_prob.cpu().detach().numpy().squeeze())
         
         return action
     
@@ -48,5 +55,8 @@ class PGAgent(BaseAgent):
         self.is_train = is_train
         self.model.train(is_train)
 
+    def load_model(self, path):
+        self.model.load_state_dict(torch.load(path))
 
-
+    def save_model(self, path):
+        torch.save(self.model.state_dict(), path)

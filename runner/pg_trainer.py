@@ -20,6 +20,7 @@ def _get_nn_small(out_channel):
             nn.Conv2d(in_channels=out_channel, out_channels=16,
                         kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
+            # nn.AdaptiveMaxPool2d((2,2)),
             nn.MaxPool2d(kernel_size=2, stride=2),
                     # (batch_size, 16, 2, 2)
             nn.Flatten(),
@@ -57,7 +58,7 @@ class PGTrainer(BaseRunner):
         self.update_steps = config['update_steps']
         self.test_freq = config['test_freq']
         self.gamma = config["pg_gamma"]
-        # self.eps = 1e-6
+        self.eps = 1e-6
         self.epsilon = config['pg_epsilon']
         self.lr = config['pg_lr']
         self.num_episodes = config['pg_num_episodes']
@@ -174,16 +175,20 @@ class PGTrainer(BaseRunner):
             
             action_prob = self.agent.policy_prob(torch.concat(eps_state))
             N = len(eps_reward)
-            log_prob = torch.log(action_prob[torch.arange(N),torch.tensor(eps_action)])
+            log_prob = torch.log(torch.clip(
+                action_prob[torch.arange(N),torch.tensor(eps_action)],
+                self.eps))
                 
             loss += -torch.sum(log_prob * reward_to_go)
             
         loss = loss / self.update_steps
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
+        if not np.isnan(loss.item()):
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+        else:
+            INFO("Loss is nan")
         # loss_sum += loss.item()
-        assert not np.isnan(loss.item()), 'loss is nan'
         return loss.item()
         
     def train_step(self):
@@ -215,7 +220,7 @@ class PGTrainer(BaseRunner):
                                   f'pg_{epoch}_{score_mean:.3f}_{score_std:.3f}.pth')
         if not os.path.exists(os.path.dirname(model_path)):
             os.makedirs(os.path.dirname(model_path))
-        torch.save(self.agent.model.state_dict(), model_path)
+        self.agent.save_model(model_path)
         INFO(f'Save model to {model_path}')
 
 

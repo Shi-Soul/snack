@@ -1,5 +1,5 @@
 exp_name: 'pg_t3'
-seed: 3
+seed: 9
 use_tb_logger: True
 
 # Env Related
