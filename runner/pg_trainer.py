@@ -14,6 +14,26 @@ from util import INFO, DEBUG, TBLogger
 from runner import BaseRunner
 from agent import PGAgent
 
+def _get_nn_xs(out_channel):
+    policy_net = nn.Sequential(
+            # Input: (batch_size, 3, 5, 5)
+            nn.Conv2d(in_channels=out_channel, out_channels=6,
+                        kernel_size=3, stride=1, padding=1),
+            nn.LeakyReLU(),
+            nn.Conv2d(in_channels=6, out_channels=8,
+                        kernel_size=3, stride=1, padding=1),
+            nn.LeakyReLU(),
+            # nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.AdaptiveMaxPool2d((2,2)),
+                    # (batch_size, 8, 2, 2)
+            nn.Flatten(),
+                    # (batch_size, 8*2*2)
+            nn.Linear(32, 8),
+            nn.LeakyReLU(),
+            nn.Linear(8, 4),
+        )
+    return policy_net
+
 def _get_nn_small(out_channel):
     policy_net = nn.Sequential(
             # Input: (batch_size, 3, 5, 5)
@@ -37,12 +57,12 @@ def _get_nn_normal(out_channel):
             nn.Conv2d(in_channels=out_channel, out_channels=16,
                         kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.1),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1),
                     # (batch_size, 32, 2, 2)
             nn.Flatten(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.1),
                     # (batch_size, 32*2*2)
             nn.Linear(128, 64),
             nn.ReLU(),
@@ -50,6 +70,10 @@ def _get_nn_normal(out_channel):
         )
     return policy_net
 
+_get_nn_dict = {
+    'small': _get_nn_small,
+    'normal': _get_nn_normal,
+}
 
 class PGTrainer(BaseRunner):
     def __init__(self, env, config):
@@ -69,10 +93,7 @@ class PGTrainer(BaseRunner):
         
         
         self.env = env
-        if config['pg_net'] == 'small':
-            policy_net = _get_nn_small(config['obs_channel']).to(self.device)
-        elif config['pg_net'] == 'normal':
-            policy_net = _get_nn_normal(config['obs_channel']).to(self.device)
+        policy_net = _get_nn_dict[config['pg_net']](config['obs_channel']).to(self.device)
         
         self.agent = PGAgent(policy_net, self.device, epsilon=self.epsilon)
         self.agent.train(True)

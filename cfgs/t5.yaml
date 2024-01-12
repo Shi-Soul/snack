@@ -1,0 +1,23 @@
+exp_name: 'pg_t5'
+seed: 9
+use_tb_logger: True
+
+# Env Related
+obs_channel: 3
+size: 5
+init_length: 2
+max_step: 100
+penalty: -10
+
+# Algo Related
+train_epoch: 100000
+update_steps: 200 # More precisely, batch_size
+test_freq: 30
+pg_num_episodes: 100
+pg_buffer_size: 200
+pg_net: "normal" # small, normal, large
+pg_epsilon: 0.003
+pg_gamma: 0.90
+
+pg_lr: 0.003
+

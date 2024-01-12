@@ -9,12 +9,12 @@ from runner import BaseRunner, PGTrainer
 from render import TextRender
 
 def play(params):
-    # agent = HumanAgent()
+    agent = HumanAgent()
     # agent = RandomAgent(1)
-    from runner.pg_trainer import _get_nn_small, _get_nn_normal
-    agent = PGAgent(_get_nn_small(params['obs_channel']), params['device'])
-    agent.load_model("/home/wjxie/wjxie/env/snack/result/pg_t3_12025732/model/pg_150_-0.270_2.004.pth")
-    agent.train(False)
+    from runner.pg_trainer import _get_nn_dict
+    # agent = PGAgent(_get_nn_dict['small'](params['obs_channel']), params['device'])
+    # agent.load_model("/home/wjxie/wjxie/env/snack/result/pg_t3_h_12051907/model/pg_180_-0.010_1.196.pth")
+    # agent.train(False)
     
     env = SnakeEnv(params["init_length"], params["size"], params["max_step"], params["penalty"])
     render = TextRender()
@@ -43,11 +43,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='cfgs/cfg.yaml')
     parser.add_argument('--play', type=str2bool, default=False)
+    parser.add_argument('--seed', type=int, default=-1)
     args = parser.parse_args()
     
     params = load_config(args.config)
     params['device'] = torch.device("cuda") if torch.cuda.is_available() else torch.device('cpu')
-    
+    if args.seed != -1:
+        params['seed'] = args.seed
     setup_seed(params['seed'])
     
     if args.play:
