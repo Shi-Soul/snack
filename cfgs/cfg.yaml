@@ -1,4 +1,4 @@
-exp_name: 'pg_t3_r'
+exp_name: 'pg_t3_f'
 seed: 21
 use_tb_logger: True
 
@@ -9,7 +9,7 @@ init_length: 2
 max_step: 100
 rew_penalty: -100
 rew_nothing: -0.2
-rew_food: 100
+rew_food: 50
 
 # Algo Related
 train_epoch: 100000

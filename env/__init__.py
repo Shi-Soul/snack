@@ -1,3 +1,3 @@
-from env.core_torch import SnakeEnv
+from env.core_torch import SnakeEnv,VectorizedSnakeEnv
 
-__all__ = ['SnakeEnv']
+__all__ = ['SnakeEnv','VectorizedSnakeEnv']

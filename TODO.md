@@ -22,3 +22,9 @@
 AI :
 每个算法: Trainer, Agent, Buffer
 - [x] Simple Policy Gradient
+
+### 24/01/15
+优化: 
+* 改成Fix timestep, 每次die后环境主动重置. 
+  * 希望能加速训练, 学到主动吃豆.
+  * 有助于日后 向量化环境, 以及实现其他算法.

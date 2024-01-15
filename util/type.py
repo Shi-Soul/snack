@@ -1,9 +1,10 @@
 import torch 
-from typing import Tuple 
+from typing import Tuple , Union
 
-ACT = int
+ONEDIM = torch.Tensor
+ACT = Union[int,ONEDIM]
 # OBS = np.ndarray
 OBS = torch.Tensor
-REW = int
-DONE = int
+REW = Union[int,ONEDIM]
+DONE = Union[int,ONEDIM]
 RET = Tuple[OBS, REW, DONE]

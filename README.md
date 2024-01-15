@@ -4,6 +4,7 @@
 
 - [X] Game Env
 - [ ] Policy Gradient (Debug ing)
+- [ ] Vectorized Env
 
 
 
