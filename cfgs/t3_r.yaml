@@ -1,8 +1,8 @@
-exp_name: pg_t3_h
+exp_name: pg_t3_r
 init_length: 2
 max_step: 100
 obs_channel: 3
-penalty: -10
+penalty: -100
 pg_buffer_size: 200
 pg_epsilon: 0.003
 pg_gamma: 0.80

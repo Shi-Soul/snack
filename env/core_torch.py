@@ -19,11 +19,13 @@ from util import ACT, OBS, RET, INFO, DEBUG
 EPS=1e-6
 
 class SnakeEnv():
-    def __init__(self, init_length = 5, size=10, max_step=100, penalty=-10):
+    def __init__(self, init_length = 5, size=10, max_step=100, rew_penalty=-10, rew_nothing=-1, rew_food=10):
         self.init_length = init_length
         self.size = size
         self.max_step = max_step
-        self.penalty = penalty
+        self.rew_penalty = rew_penalty
+        self.rew_nothing = rew_nothing
+        self.rew_food = rew_food
         
         # Current State
         self.state = torch.tensor([])
@@ -91,7 +93,7 @@ class SnakeEnv():
         hit_wall = torch.abs(torch.sum(next_head))<EPS
         hit_body = torch.sum(next_head*state[2])>0
         if hit_wall or hit_body:
-            reward = self.penalty
+            reward = self.rew_penalty
             done = 1
             # DEBUG(f"hit_wall: {hit_wall}, hit_body: {hit_body}")
             self.state = state
@@ -108,10 +110,13 @@ class SnakeEnv():
             state[1] = torch.zeros_like(state[1]) # remove food
             state = self._generate_food(state)
             self.current_length += 1
-            reward = 1
+            reward = self.rew_food # DEBUG
+            # reward = 1 
             done = 0
         else:
-            reward = 0
+            reward = self.rew_nothing 
+            
+            # reward = 0
             done = 0
         # DEBUG(f"hit_food: {hit_food}")
         

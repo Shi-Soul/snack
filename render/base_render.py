@@ -16,7 +16,7 @@ class TextRender(BaseRender):
         if self.cls:
             print('\033c',end='')
         shape=state[0].shape 
-        print("-----"*(5+shape[1]))
+        print("-"*(5+shape[1]))
         for x,y in np.ndindex(shape):
             if y == 0:
                 print("|", end="")
@@ -31,6 +31,6 @@ class TextRender(BaseRender):
             if y == shape[1]-1:
                 print("|")
         
-        print("-----"*(5+shape[1]))
+        print("-"*(5+shape[1]))
         print("F for Food, H for Head, B for Snake Body")
         print("Time step: ", time_step)

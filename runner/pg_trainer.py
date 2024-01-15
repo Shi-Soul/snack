@@ -71,6 +71,7 @@ def _get_nn_normal(out_channel):
     return policy_net
 
 _get_nn_dict = {
+    'xs': _get_nn_xs,
     'small': _get_nn_small,
     'normal': _get_nn_normal,
 }
@@ -113,7 +114,7 @@ class PGTrainer(BaseRunner):
         time_step_list = []
         snake_length_list = []
         try:
-            for epoch in range(self.train_epoch):
+            for epoch in range(0,self.train_epoch):
                 loss = self.train_step()
                 loss_list.append(loss)
                 
@@ -131,6 +132,8 @@ class PGTrainer(BaseRunner):
                     if score_mean > best_score:
                         best_score = score_mean
                         self.save_model(epoch, score_mean, score_std)
+                    if epoch % 200 == 0:
+                        self.save_model(epoch, score_mean, score_std)
                     
                     if self.use_tb:
                         # self.tb_logger.log_scalar(score_mean, 'score_mean', epoch)
@@ -141,6 +144,7 @@ class PGTrainer(BaseRunner):
                             "time_step": time_step,
                             "snake_length": snake_length
                             }, 'eval', epoch)
+                        self.tb_logger.flush()
                     INFO(f'Epoch: {epoch}, score: {score_mean:.3f} +- {score_std:.3f}')
         except KeyboardInterrupt:
             INFO("Training interrupted.")

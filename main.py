@@ -1,7 +1,7 @@
 
 import torch
 import argparse
-
+import os
 from util import load_config, save_config, setup_logging, setup_seed, INFO, DEBUG, str2bool
 from agent import HumanAgent, RandomAgent, PGAgent
 from env import SnakeEnv
@@ -9,14 +9,15 @@ from runner import BaseRunner, PGTrainer
 from render import TextRender
 
 def play(params):
-    agent = HumanAgent()
+    # agent = HumanAgent()
     # agent = RandomAgent(1)
     from runner.pg_trainer import _get_nn_dict
-    # agent = PGAgent(_get_nn_dict['small'](params['obs_channel']), params['device'])
-    # agent.load_model("/home/wjxie/wjxie/env/snack/result/pg_t3_h_12051907/model/pg_180_-0.010_1.196.pth")
-    # agent.train(False)
+    agent = PGAgent(_get_nn_dict['small'](params['obs_channel']), params['device'])
+    # print(os.getcwd())
+    agent.load_model("result/pg_t3_r_12152820/model/pg_33030_-17.552_4.356.pth")
+    agent.train(False)
     
-    env = SnakeEnv(params["init_length"], params["size"], params["max_step"], params["penalty"])
+    env = SnakeEnv(params["init_length"], params["size"], params["max_step"], params["rew_penalty"], params["rew_nothing"], params["rew_food"])
     render = TextRender()
     
     runner = BaseRunner(agent, env, render)
@@ -31,7 +32,7 @@ def pg_train(params):
     INFO("Params: ",params,pp=True)
     save_config(params, log_dir)
     # agent = RandomAgent(1)
-    env = SnakeEnv(params["init_length"], params["size"], params["max_step"], params["penalty"])
+    env = SnakeEnv(params["init_length"], params["size"], params["max_step"], params["rew_penalty"], params["rew_nothing"], params["rew_food"])
     # render = TextRender()
     
     runner = PGTrainer(env, params)
