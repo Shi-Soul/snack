@@ -3,8 +3,9 @@
 (Still in Development)
 
 - [X] Game Env
-- [ ] Policy Gradient (Debug ing)
+- [x] Policy Gradient 
 - [x] Vectorized Env
+- [x] DQN Algorithm
 
 
 

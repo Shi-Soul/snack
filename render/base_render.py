@@ -12,7 +12,7 @@ class TextRender(BaseRender):
         self.cls = cls
     def render(self, state: OBS,  time_step:int)->None: 
         # print("Current State:")
-        time.sleep(0.5)
+        time.sleep(0.2)
         if self.cls:
             print('\033c',end='')
         shape=state[0].shape 

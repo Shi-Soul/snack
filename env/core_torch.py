@@ -49,7 +49,7 @@ class SnakeEnv():
         # self._edge_mat[:,0] = 1
         # self._edge_mat[:,-1] = 1
         
-        self.reset()
+        # self.reset()
         
     def reset(self) -> RET:
         self.time_step = 0
@@ -93,7 +93,7 @@ class SnakeEnv():
         time_out = self.time_step == self.max_step
         
         next_head = torch.conv2d(state[0].unsqueeze(0), 
-                                    self._move_kernel[action],
+                                    self._move_kernel[action], # type: ignore
                                     padding=1)[0]
         # DEBUG("next_head: \n",next_head)
         hit_wall = torch.abs(torch.sum(next_head))<EPS
@@ -118,7 +118,7 @@ class SnakeEnv():
         
         # Move body
         state[0] = next_head
-        state[2] = np.clip(state[2] - (1- (hit_food).to(torch.float32)), 0, None) + state[0]*self.current_length
+        state[2] = np.clip(state[2] - (1- (hit_food).to(torch.float32)), 0, None) + state[0]*self.current_length # type: ignore
         
         if hit_food:
             state[1] = torch.zeros_like(state[1]) # remove food
@@ -161,18 +161,21 @@ class SnakeEnv():
         return state
     
 class VectorizedSnakeEnv(SnakeEnv):
-    def __init__(self, num_batch, init_length = 5, size=10, max_step=100, rew_penalty=-10, rew_nothing=-1, rew_food=10):
+    def __init__(self, num_batch, device="cuda", init_length = 5, size=10, max_step=100, rew_penalty=-10, rew_nothing=-1, rew_food=10,rew_difficulty=0.3):
         self.n = num_batch
+        self.device = device
         self.init_length = init_length
         self.size = size
         self.max_step = max_step
         self.rew_penalty = rew_penalty
         self.rew_nothing = rew_nothing
         self.rew_food = rew_food
+        self.rew_difficulty = rew_difficulty
         
         # Current State
         self.state = torch.tensor([])
         self.time_step = torch.tensor([])
+        self.death_count = torch.tensor([])
         self.current_length = torch.tensor([])
         
         self._move_kernel =torch.concat([
@@ -180,13 +183,16 @@ class VectorizedSnakeEnv(SnakeEnv):
             torch.tensor([[0,0,0],[0,0,1],[0,0,0]],dtype=torch.float32).flip(dims=(-2,-1)).reshape(1,1,3,3),
             torch.tensor([[0,1,0],[0,0,0],[0,0,0]],dtype=torch.float32).flip(dims=(-2,-1)).reshape(1,1,3,3),
             torch.tensor([[0,0,0],[0,0,0],[0,1,0]],dtype=torch.float32).flip(dims=(-2,-1)).reshape(1,1,3,3),
-        ])
+        ]).to(self.device)
         # [4,1,3,3]
         
         
-        self.reset()
+        # self.reset()
         
-    def step(self, action: ACT) -> RET: #TODO DEBUG
+    def get_hidden_state(self) -> Tuple[OBS, ONEDIM, ONEDIM, ONEDIM]:
+        return (self.state, self.time_step, self.current_length, self.death_count)
+    
+    def step(self, action: ACT) -> RET: 
         # action: [N,1] int64
         """
         time_step++
@@ -225,7 +231,7 @@ class VectorizedSnakeEnv(SnakeEnv):
         time_out = (self.time_step == self.max_step).to(torch.float32)
         # [N,1] float32
         
-        one_hot_action = F.one_hot(action, num_classes=4).to(torch.float32)
+        one_hot_action = F.one_hot(action.to(torch.int64), num_classes=4).to(torch.float32) # type: ignore
         # [N,1,4]
         next_head = torch.conv2d(state[:,:1], 
                                     self._move_kernel,
@@ -241,42 +247,48 @@ class VectorizedSnakeEnv(SnakeEnv):
         hit_food = (torch.sum(next_head*state[:,1],dim=(-1,-2),keepdim=False)>0)[:,None]
         die = torch.logical_or(hit_wall, hit_body)
         hit_food,die = hit_food.to(torch.float32), die.to(torch.float32)
+        self.death_count += die
         self.current_length = (self.current_length + hit_food) * (1-die) + self.init_length * die
         
         # ACTIVELY RESET
-        state = torch.zeros((self.n,3,self.size,self.size))*die + state*(1-die)
+        state = torch.zeros((self.n,3,self.size,self.size),device=self.device)*die[:,None,None] + state*(1-die[:,None,None])
         state = self._generate_init_head(state, self.init_length, mask=die) 
         
         # Move body
-        state[:,0] = next_head * (1-die) + state[:,0] * die
-        state[:,2] = (np.clip(state[:,2] - (1- (hit_food)), 0, None) + state[:,0]*self.current_length) * (1-die) + state[:,2] * die
+        state[:,0] = next_head * (1-die[:,None]) + state[:,0] * die[:,None]
+        state[:,2] = (torch.clip(state[:,2] - (1- (hit_food[:,None])), 0, None) + state[:,0]*self.current_length[:,None]) * (1-die[:,None]) + state[:,2] * die[:,None] # type: ignore
         
         # Remove food
-        state[:,1] = torch.zeros_like(state[:,1])*hit_food + state[:,1]*(1-hit_food)
+        state[:,1] = torch.zeros_like(state[:,1])*hit_food[:,None] + state[:,1]*(1-hit_food[:,None])
         state = self._generate_food(state, mask=torch.logical_or(die,hit_food).to(torch.float32))
         
+        # assert torch.all( torch.sum(state[:,0],dim=(-1,-2))==1  ), "Head is not unique"
         
         done = time_out
-        reward = (self.rew_nothing * (1-hit_food)  + self.rew_food * hit_food) * (1-die) + self.rew_penalty * die
+        reward = (self.rew_nothing * (1-hit_food)  + (self.rew_food+self.current_length*self.rew_difficulty) * hit_food) * (1-die) + self.rew_penalty * die
             
+        # DEBUG("time step end",state)
         self.state = state
         return (state, reward, done)
         
     def reset(self) -> RET:
-        self.time_step = torch.zeros((self.n,1),dtype=torch.float32)
-        self.current_length = torch.ones((self.n,1),dtype=torch.float32) * self.init_length
+        self.time_step = torch.zeros((self.n,1),dtype=torch.float32,device=self.device)
+        self.death_count = torch.zeros((self.n,1),dtype=torch.float32,device = self.device)
+        self.current_length = torch.ones((self.n,1),
+                                         dtype=torch.float32,device=self.device) * self.init_length
         
-        obs = torch.zeros((self.n,3,self.size,self.size))
+        obs = torch.zeros((self.n,3,self.size,self.size),device=self.device)
         obs = self._generate_init_head(obs, self.init_length)
         obs = self._generate_food(obs)
         
         self.state = obs
-        reward = torch.zeros((self.n,1),dtype=torch.float32)
-        done = torch.zeros((self.n,1),dtype=torch.float32)
+        reward = torch.zeros((self.n,1),dtype=torch.float32,device=self.device)
+        done = torch.zeros((self.n,1),dtype=torch.float32,device=self.device)
         
         return (obs, reward, done)
     
-    def _generate_food(self, state: OBS, mask: ONEDIM=None) -> OBS:
+    def _generate_food(self, state: OBS, 
+                       mask: Union[None,ONEDIM]=None) -> OBS:
         # state: [N,3,size,size]
         # mask : [N,1] float32
         # mask = 1 means this batch sample need to generate food, 0 for not.
@@ -285,9 +297,9 @@ class VectorizedSnakeEnv(SnakeEnv):
         # of steps. We should avoid logical loop in the code.
         
         if mask is None:
-            mask = torch.ones((self.n,1),dtype=torch.float32)
-        
-        P = ((state[:,2]==0).to(torch.float32).reshape(self.n,-1) + (1-mask)*BIG  )
+            mask = torch.ones((self.n,1),dtype=torch.float32,device=self.device)
+        P = ((state[:,2]==0).to(torch.float32).reshape(self.n,-1))
+        P = P + (1-mask+(P.sum(dim=(-1),keepdim=True)==0).to(torch.float32))*BIG  
         # P: [N, size*size,]
         # add BIG number, to avoid those case that mask=0 but state[2] is all nonzero
         # It will cause the multinomial function to fail.
@@ -298,24 +310,29 @@ class VectorizedSnakeEnv(SnakeEnv):
         x, y = food//self.size, food%self.size
         # x,y : [N, 1]
         
-        state[torch.arange(self.n),1,x,y] += mask
+        state[torch.arange(self.n),1,x[:,0],y[:,0]] += mask[:,0]
+        # assert torch.all( torch.sum(state[:,1],dim=(-1,-2))==1  ), "Food is not unique"
         # state[1,x,y] = 1
         
         return state
     
-    def _generate_init_head(self, state: OBS, init_length: ONEDIM, mask: ONEDIM=None) -> OBS:
+    def _generate_init_head(self, state: OBS, 
+                            init_length: Union[int,ONEDIM], 
+                            mask: Union[None,ONEDIM]=None) -> OBS:
         # state: [N,3,size,size]
         # init_length: [N,1] or int
         # mask : [N,1] float32
         # Assert state is empty for those mask==1.
         if mask is None:
-            mask = torch.ones((self.n,1),dtype=torch.float32)
+            mask = torch.ones((self.n,1),dtype=torch.float32,device=self.device)
         
         # x, y = np.random.randint(0, self.size, 2)
-        Pos = torch.randint(0, self.size, (2,self.n,1))
+        Pos = torch.randint(0, self.size, (2,self.n),device=self.device)
         
-        state[torch.arange(self.n),0,Pos[0],Pos[1]] += mask
-        state[:,2] += mask * init_length * state[:,0]
+        state[torch.arange(self.n),0,Pos[0],Pos[1]] += mask[:,0]
+        state[:,2] += mask[:,None] * init_length * state[:,0]
+        # DEBUG("generate_init_head",state)
+        # assert torch.all( torch.sum(state[:,0],dim=(-1,-2))==1  ), "Head is not unique"
         # state[0,x,y] = 1
         # state[2,x,y] = init_length
         return state
