@@ -26,9 +26,10 @@ def play(params):
     
 def play_vec(params):
     # agent = HumanAgent()
-    from runner.pg_trainer import _get_nn_dict
-    agent = DQNAgent(_get_nn_dict['small'](params['obs_channel']), params['device'])
-    agent.load_model("/home/wjxie/wjxie/env/snack/result/dqn_16110052/model/dqn_1770_2006.455_460.459.pth")
+    from runner.dqn_trainer import _get_nn_dict
+    agent = DQNAgent(_get_nn_dict['normal'](params['obs_channel']), params['device'])
+    # agent = DQNAgent(_get_nn_dict['small'](params['obs_channel']), params['device'])
+    agent.load_model("/home/wjxie/wjxie/env/snack/result/dqn_21120702/model/dqn_240_-189.797_28.543.pth")
     agent.train(False)
     
     

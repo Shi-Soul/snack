@@ -1,16 +1,16 @@
-exp_name: 'dqn'
+exp_name: 'dqn_mid'
 seed: 23
 use_tb_logger: True
 
 # Env Related
 obs_channel: 3
-size: 25
+size: 15
 init_length: 4
-max_step: 1000
+max_step: 500
 rew_penalty: -100
 rew_nothing: -0.2
-rew_food: 40
-rew_difficulty: 5
+rew_food: 50
+rew_difficulty: 10
 
 # Training Related
 use_vec_env: True
@@ -32,8 +32,8 @@ dqn_target_update_steps: 10
 dqn_num_episodes: 256
 dqn_batch_size: 1024
 dqn_buffer_size: 60000
-dqn_net: "mid" # small, mid, normal, large
+dqn_net: "mid" # small, normal, large
 dqn_epsilon: 0.03
 dqn_gamma: 0.95
-dqn_lr: 0.0003
+dqn_lr: 0.0005
 

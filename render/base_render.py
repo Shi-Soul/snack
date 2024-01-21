@@ -12,25 +12,34 @@ class TextRender(BaseRender):
         self.cls = cls
     def render(self, state: OBS,  time_step:int)->None: 
         # print("Current State:")
-        time.sleep(0.2)
-        if self.cls:
-            print('\033c',end='')
         shape=state[0].shape 
-        print("-"*(5+shape[1]))
+        render_str =  "-"*(2+shape[1])+"\n"
+        # print("-"*(5+shape[1]))
         for x,y in np.ndindex(shape):
             if y == 0:
-                print("|", end="")
+                # print("|", end="")
+                render_str += "|"
             if state[0,x,y] == 1:
-                print("H", end="")
+                # print("H", end="")
+                render_str += "H"
             elif state[1,x,y] == 1:
-                print("F", end="")
+                # print("F", end="")
+                render_str += "F"
             elif state[2,x,y]>0:
-                print("B", end="")
+                # print("B", end="")
+                render_str += "B"
             else:
-                print(" ", end="")
+                # print(" ", end="")
+                render_str += " "
             if y == shape[1]-1:
-                print("|")
+                # print("|") 
+                render_str += "|\n"
         
-        print("-"*(5+shape[1]))
+        # print("-"*(5+shape[1]))
+        render_str += "-"*(2+shape[1])+"\n"
+        time.sleep(0.05)
+        if self.cls:
+            print('\033c',end='')
+        print(render_str, end="")
         print("F for Food, H for Head, B for Snake Body")
         print("Time step: ", time_step)

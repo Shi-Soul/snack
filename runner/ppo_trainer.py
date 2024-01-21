@@ -56,51 +56,20 @@ def _get_nn_small(out_channel):
     INFO("Total parameters: ",sum(p.numel() for p in policy_net.parameters() if p.requires_grad))
     return policy_net
 
-
-def _get_nn_mid(out_channel):
-    # Design for 15*15
-    policy_net = nn.Sequential(
-                # Input: (batch_size, 3, 15, 15)
-            nn.Conv2d(in_channels=out_channel, out_channels=4,
-                        kernel_size=7, stride=2, padding=3),
-                # 15-K+2P/S+1 = (15-7+2*3)/2+1 = 8
-                # (N,4,8,8)
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-                # (N, 4, 4, 4)
-            nn.Dropout(0.1),
-            nn.Conv2d(in_channels=4, out_channels=32,
-                        kernel_size=3, stride=1, padding=0),
-            nn.SiLU(),
-                # 4-3+2*0/1+1 = 2
-                # (N,32,2,2)
-            nn.AdaptiveMaxPool2d((2,2)),
-                # (N, 32, 2, 2)
-            nn.Flatten(),
-            nn.Dropout(0.1),
-                # (N, 32*2*2)
-            nn.Linear(128, 32),
-            nn.SiLU(),
-            nn.Linear(32, 4),
-        )
-    INFO(policy_net)
-    INFO("Total parameters: ",sum(p.numel() for p in policy_net.parameters() if p.requires_grad))
-    return policy_net
-
 def _get_nn_normal(out_channel):
     # Design for 25*25
     policy_net = nn.Sequential(
                 # Input: (batch_size, 3, 25, 25)
-            nn.Conv2d(in_channels=out_channel, out_channels=4,
+            nn.Conv2d(in_channels=out_channel, out_channels=8,
                         kernel_size=7, stride=3, padding=3),
                 # 25-K+2P/S+1 = 25-7+2*3/3+1 = 9
                 # (N,4,9,9)
             nn.ReLU(),
             nn.Dropout(0.1),
-            nn.Conv2d(in_channels=4, out_channels=32,
+            nn.Conv2d(in_channels=8, out_channels=32,
                         kernel_size=5, stride=1, padding=0),
             nn.SiLU(),
-                # 9-5+2*0/1+1 = 5
+                # 9-5+2*2/1+1 = 5
                 # (N,16,5,5)
             nn.AdaptiveMaxPool2d((2,2)),
                 # (N, 32, 2, 2)
@@ -118,11 +87,10 @@ def _get_nn_normal(out_channel):
 _get_nn_dict = {
     'xs': _get_nn_xs,
     'small': _get_nn_small,
-    'mid': _get_nn_mid,
     'normal': _get_nn_normal,
 }
 
-class DQNTrainer(BaseRunner):
+class PPOTrainer(BaseRunner):
     def __init__(self, env, config):
         self.log_dir = config['log_dir']
         self.device = config['device']
