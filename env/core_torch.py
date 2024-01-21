@@ -59,11 +59,11 @@ class SnakeEnv():
         obs = self._generate_init_head(obs, self.init_length)
         obs = self._generate_food(obs)
         
-        self.state = obs
+        self.state: OBS = obs
         reward = 0 
         done = 0
         
-        return (obs, reward, done)
+        return (obs.unsqueeze(0), torch.tensor([[reward]]), torch.tensor([[done]]))
     
     def step(self, action: ACT) -> RET:
         """
@@ -111,7 +111,7 @@ class SnakeEnv():
                 reward = self.rew_penalty
                 done = 1
             self.state = state
-            return (state, reward, done or time_out)
+            return (state.unsqueeze(0), torch.tensor([[reward]]), torch.tensor([[done or time_out]]))
         
         # Hit food
         hit_food = torch.sum(next_head*state[1])>0
@@ -133,10 +133,12 @@ class SnakeEnv():
         
             
         self.state = state
-        return (state, reward, done or time_out)
+        return (state.unsqueeze(0), torch.tensor([[reward]]), torch.tensor([[done or time_out]]))
         
-    def get_hidden_state(self) -> Tuple[OBS, int, int]:
-        return (self.state, self.time_step, self.current_length)
+    def get_hidden_state(self) -> \
+        Tuple[OBS, ONEDIM, ONEDIM, ONEDIM]:
+        return (self.state, torch.tensor([[self.time_step]]), 
+                torch.tensor([[self.current_length]]), torch.tensor([[0]]))
         
     def _generate_food(self, state: OBS) -> OBS:
         # For vectorization, we need to generate random food in fixed number
@@ -189,7 +191,8 @@ class VectorizedSnakeEnv(SnakeEnv):
         
         # self.reset()
         
-    def get_hidden_state(self) -> Tuple[OBS, ONEDIM, ONEDIM, ONEDIM]:
+    def get_hidden_state(self) -> \
+        Tuple[OBS, ONEDIM, ONEDIM, ONEDIM]:
         return (self.state, self.time_step, self.current_length, self.death_count)
     
     def step(self, action: ACT) -> RET: 

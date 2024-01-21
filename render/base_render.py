@@ -37,7 +37,7 @@ class TextRender(BaseRender):
         
         # print("-"*(5+shape[1]))
         render_str += "-"*(2+shape[1])+"\n"
-        time.sleep(0.05)
+        time.sleep(0.2)
         if self.cls:
             print('\033c',end='')
         print(render_str, end="")

@@ -7,7 +7,7 @@ obs_channel: 3
 size: 15
 init_length: 4
 max_step: 500
-rew_penalty: -100
+rew_penalty: -1000
 rew_nothing: -0.2
 rew_food: 50
 rew_difficulty: 10

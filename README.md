@@ -6,6 +6,6 @@
 - [x] Policy Gradient 
 - [x] Vectorized Env
 - [x] DQN Algorithm
-- [ ] PPO
+- [x] PPO (Debugging)
 
 

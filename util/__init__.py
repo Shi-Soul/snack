@@ -23,9 +23,9 @@ __all__=[
     "setup_logging",
     "setup_seed",
     "TBLogger",
-    "load_config","save_config"
-    "ACT","OBS","RET","MASK",
-    "str2bool"
+    "load_config","save_config",
+    "ACT","OBS","RET","POL",
+    "str2bool",
     ]
 
 

@@ -1,12 +1,12 @@
-exp_name: 'dqn'
+exp_name: 'ppo_d'
 seed: 23
 use_tb_logger: True
 
 # Env Related
 obs_channel: 3
-size: 25
-init_length: 4
-max_step: 1000
+size: 5
+init_length: 2
+max_step: 100
 rew_penalty: -100
 rew_nothing: -0.2
 rew_food: 40
@@ -14,13 +14,12 @@ rew_difficulty: 5
 
 # Training Related
 use_vec_env: True
-n_env: 64
+n_env: 256
 
 # Algo Related
 train_epoch: 10000
 update_steps: 40 # More precisely, batch_size for PG, gradient steps for DQN
 test_freq: 30
-
 
 
 pg_num_episodes: 100
@@ -40,11 +39,15 @@ dqn_gamma: 0.95
 dqn_lr: 0.0003
 
 ppo:
-  target_update_steps: 10
-  num_episodes: 256
+  target_update_steps: 50
+  num_episodes: 512
   batch_size: 1024
-  buffer_size: 60000
+  buffer_size: 600000
   net: "small" # small, mid, normal, large
   gamma: 0.95
-  lr: 0.0003
-  epsilon: 0.03
+  actor_lr: 0.001
+  critic_lr: 0.003
+  explore_epsilon: 0.03
+  clip_epsilon: 0.2
+  use_lr_scheduler: True
+  use_target_q: False
