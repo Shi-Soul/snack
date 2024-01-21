@@ -4,9 +4,9 @@ use_tb_logger: True
 
 # Env Related
 obs_channel: 3
-size: 25
-init_length: 4
-max_step: 1000
+size: 5
+init_length: 2
+max_step: 100
 rew_penalty: -100
 rew_nothing: -0.2
 rew_food: 40
@@ -28,12 +28,12 @@ pg_epsilon: 0.003
 pg_gamma: 0.80
 pg_lr: 0.0005
 
-dqn_target_update_steps: 10
+dqn_target_update_steps: 50
 dqn_num_episodes: 512
 dqn_batch_size: 1024
 dqn_buffer_size: 100000
-dqn_net: "normal" # small, normal, large
+# pg_net: "small" # small, normal, large
 dqn_epsilon: 0.03
 dqn_gamma: 0.95
-dqn_lr: 0.0001
+dqn_lr: 0.0005
 

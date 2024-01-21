@@ -37,6 +37,7 @@ def _get_nn_xs(out_channel):
     return policy_net
 
 def _get_nn_small(out_channel):
+    # Design for 5*5
     policy_net = nn.Sequential(
             # Input: (batch_size, 3, 5, 5)
             nn.Conv2d(in_channels=out_channel, out_channels=16,
@@ -54,20 +55,31 @@ def _get_nn_small(out_channel):
     return policy_net
 
 def _get_nn_normal(out_channel):
+    # Design for 25*25
     policy_net = nn.Sequential(
-            # Input: (batch_size, 3, 5, 5)
+            # Input: (batch_size, 3, 25, 25)
             nn.Conv2d(in_channels=out_channel, out_channels=16,
-                        kernel_size=3, stride=1, padding=1),
+                        kernel_size=7, stride=1, padding=3),
+            # (N,16,25,25)
             nn.ReLU(),
             nn.Dropout(0.1),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(in_channels=16, out_channels=16,
+                        kernel_size=7, stride=3, padding=3),
+            nn.SiLU(),
+            # 25-K+2P/S+1 = 25-7+2*3/3+1 = 9
+            # (N,16,9,9)
+            nn.AdaptiveMaxPool2d((3,3)),
+            nn.Conv2d(in_channels=16, out_channels=32,
+                        kernel_size=3, stride=2, padding=0),
+            # (N,32,4,4) 9-3+2*0/2+1 = 4
+            nn.SiLU(),
+            nn.AdaptiveMaxPool2d((2,2)),
                     # (batch_size, 32, 2, 2)
             nn.Flatten(),
             nn.Dropout(0.1),
                     # (batch_size, 32*2*2)
             nn.Linear(128, 64),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(64, 4),
         )
     return policy_net
@@ -103,9 +115,9 @@ class DQNTrainer(BaseRunner):
         self.n_env = config['n_env']
         assert self.num_episodes % self.n_env == 0, "num_episodes should be divisible by n_env"
         
-        q_net:nn.Module = _get_nn_dict[config['pg_net']](config['obs_channel']).to(self.device)
+        q_net:nn.Module = _get_nn_dict[config['dqn_net']](config['obs_channel']).to(self.device)
         if self.use_target_q:
-            self.target_q_net = _get_nn_dict[config['pg_net']](config['obs_channel']).to(self.device)
+            self.target_q_net = _get_nn_dict[config['dqn_net']](config['obs_channel']).to(self.device)
             self.target_q_net.load_state_dict(q_net.state_dict())
             self.target_q_net.requires_grad_(False)
         else:
