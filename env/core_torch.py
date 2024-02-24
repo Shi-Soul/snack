@@ -163,7 +163,7 @@ class SnakeEnv():
         return state
     
 class VectorizedSnakeEnv(SnakeEnv):
-    def __init__(self, num_batch, device="cuda", init_length = 5, size=10, max_step=100, rew_penalty=-10, rew_nothing=-1, rew_food=10,rew_difficulty=0.3):
+    def __init__(self, num_batch, device="cuda", init_length = 5, size=10, max_step=100, rew_penalty=-10, rew_nothing=-1, rew_food=10,rew_difficulty=0.3,rew_pow_len=2):
         self.n = num_batch
         self.device = device
         self.init_length = init_length
@@ -173,6 +173,7 @@ class VectorizedSnakeEnv(SnakeEnv):
         self.rew_nothing = rew_nothing
         self.rew_food = rew_food
         self.rew_difficulty = rew_difficulty
+        self.rew_pow_len = rew_pow_len
         
         # Current State
         self.state = torch.tensor([])
@@ -268,7 +269,7 @@ class VectorizedSnakeEnv(SnakeEnv):
         # assert torch.all( torch.sum(state[:,0],dim=(-1,-2))==1  ), "Head is not unique"
         
         done = time_out
-        reward = (self.rew_nothing * (1-hit_food)  + (self.rew_food+self.current_length*self.rew_difficulty) * hit_food) * (1-die) + self.rew_penalty * die
+        reward = (self.rew_nothing * (1-hit_food)  + (self.rew_food+(self.current_length**self.rew_pow_len)*self.rew_difficulty) * hit_food) * (1-die) + self.rew_penalty * die
             
         # DEBUG("time step end",state)
         self.state = state
