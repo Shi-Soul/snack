@@ -7,6 +7,7 @@ from agent import HumanAgent, RandomAgent, PGAgent, DQNAgent, PPOAgent
 from env import SnakeEnv,VectorizedSnakeEnv
 from runner import BaseRunner, PGTrainer, DQNTrainer, PPOTrainer
 from render import TextRender
+from util.cfg import save_config_file
 
 def play(params):
     # agent = HumanAgent()
@@ -29,17 +30,18 @@ def play_vec(params):
     # from runner.dqn_trainer import _get_nn_dict
     # agent = DQNAgent(_get_nn_dict['normal'](params['obs_channel']), params['device'])
     from runner.ppo_trainer import _get_nn_dict
-    agent = PPOAgent(_get_nn_dict['small'](params['obs_channel']), params['device'])
+    agent = PPOAgent(_get_nn_dict['mid'](params['obs_channel']), params['device'])
     # agent = DQNAgent(_get_nn_dict['small'](params['obs_channel']), params['device'])
-    agent.load_model("/home/wjxie/wjxie/env/snack/result/ppo_d_24070901/model/ppo_120_1341.030_218.814.pth")
+    agent.load_model("/home/wjxie/wjxie/env/snack/result/ppo_mid_rs3_28120707/model/ppo_120_102.914_557.097.pth")
     agent.train(False)
     
     
     # env = VectorizedSnakeEnv(1,"cuda",params["init_length"], params["size"], params["max_step"], params["rew_penalty"], params["rew_nothing"], params["rew_food"],params['rew_difficulty'])
     
     env_params = params['env']
-    env = VectorizedSnakeEnv(1,"cuda",env_params["init_length"], env_params["size"], env_params["max_step"], 
-                             env_params["rew_penalty"], env_params["rew_nothing"], env_params["rew_food"],env_params['rew_difficulty'])
+    env = VectorizedSnakeEnv(1,"cuda",**env_params)
+    # env = VectorizedSnakeEnv(1,"cuda",env_params["init_length"], env_params["size"], env_params["max_step"], 
+                            #  env_params["rew_penalty"], env_params["rew_nothing"], env_params["rew_food"],env_params['rew_difficulty'])
     render = TextRender()
     runner = BaseRunner(agent, env, render)
     ret = runner.run()
@@ -48,17 +50,19 @@ def play_vec(params):
 
 def pg_train(params):
     # TODO: 兼容到当前的环境
-    log_dir = setup_logging(params['exp_name'])
+    # log_dir = setup_logging(params['exp_name'])
     INFO("Training PG Agent")
-    params['log_dir'] = log_dir
+    # params['log_dir'] = log_dir
+    log_dir = params['log_dir']
     INFO("Params: ",params,pp=True)
-    save_config(params, log_dir)
+    # save_config(params, log_dir)
     
     # env = SnakeEnv(params["init_length"], params["size"], params["max_step"], params["rew_penalty"], params["rew_nothing"], params["rew_food"])
     
     env_params = params['env']
-    env = VectorizedSnakeEnv(params["n_env"],"cuda",env_params["init_length"], env_params["size"], env_params["max_step"], 
-                             env_params["rew_penalty"], env_params["rew_nothing"], env_params["rew_food"],env_params['rew_difficulty'])
+    env = VectorizedSnakeEnv(params["n_env"],"cuda",**env_params)
+    # env = VectorizedSnakeEnv(params["n_env"],"cuda",env_params["init_length"], env_params["size"], env_params["max_step"], 
+    #                          env_params["rew_penalty"], env_params["rew_nothing"], env_params["rew_food"],env_params['rew_difficulty'])
     # render = TextRender()
     
     runner = PGTrainer(env, params)
@@ -67,17 +71,19 @@ def pg_train(params):
     print("Logging to: ",log_dir)
 
 def dqn_train(params):
-    log_dir = setup_logging(params['exp_name'])
+    # log_dir = setup_logging(params['exp_name'])
     INFO("Training DQN Agent")
-    params['log_dir'] = log_dir
+    # params['log_dir'] = log_dir
+    log_dir = params['log_dir']
     INFO("Params: ",params,pp=True)
-    save_config(params, log_dir)
+    # save_config(params, log_dir)
     
     assert params['use_vec_env'], "DQN only support vectorized env"
     
     env_params = params['env']
-    env = VectorizedSnakeEnv(params["n_env"],"cuda",env_params["init_length"], env_params["size"], env_params["max_step"], 
-                             env_params["rew_penalty"], env_params["rew_nothing"], env_params["rew_food"],env_params['rew_difficulty'])
+    env = VectorizedSnakeEnv(params["n_env"],"cuda",**env_params)
+    # env = VectorizedSnakeEnv(params["n_env"],"cuda",env_params["init_length"], env_params["size"], env_params["max_step"], 
+                            #  env_params["rew_penalty"], env_params["rew_nothing"], env_params["rew_food"],env_params['rew_difficulty'])
     # env = VectorizedSnakeEnv(params["n_env"],"cuda",params["init_length"], params["size"], params["max_step"], params["rew_penalty"], params["rew_nothing"], params["rew_food"],params['rew_difficulty'])
 
     runner = DQNTrainer(env, params)
@@ -86,16 +92,18 @@ def dqn_train(params):
     print("Logging to: ",log_dir)
     
 def ppo_train(params):
-    log_dir = setup_logging(params['exp_name'])
+    # log_dir = setup_logging(params['exp_name'])
     INFO("Training PPO Agent")
-    params['log_dir'] = log_dir
+    # params['log_dir'] = log_dir
+    log_dir = params['log_dir']
     INFO("Params: ",params,pp=True)
-    save_config(params, log_dir)
+    # save_config(params, log_dir)
     
     # assert params['use_vec_env'], "DQN only support vectorized env"
     env_params = params['env']
-    env = VectorizedSnakeEnv(params["n_env"],"cuda",env_params["init_length"], env_params["size"], env_params["max_step"], 
-                             env_params["rew_penalty"], env_params["rew_nothing"], env_params["rew_food"],env_params['rew_difficulty'])
+    env = VectorizedSnakeEnv(params["n_env"],"cuda",**env_params)
+    # env = VectorizedSnakeEnv(params["n_env"],"cuda",env_params["init_length"], env_params["size"], env_params["max_step"], 
+                            #  env_params["rew_penalty"], env_params["rew_nothing"], env_params["rew_food"],env_params['rew_difficulty'])
 
     runner = PPOTrainer(env, params)
     ret = runner.run()
@@ -119,6 +127,10 @@ def main():
     if args.play:
         play_vec(params)
     else:
+        log_dir = setup_logging(params['exp_name'])    
+        params['log_dir'] = log_dir
+        # save_config(params, log_dir)
+        save_config_file(args.config, log_dir)
         if args.algo == 'dqn':
             dqn_train(params)
         elif args.algo == 'pg':

@@ -15,3 +15,10 @@ def save_config(dict_value: dict, save_path: str):
     """dict保存为yaml"""
     with open(os.path.join(save_path,"cfg.yaml"), 'w') as file:
         file.write(yaml.dump(dict_value, allow_unicode=True))
+        
+def save_config_file(cfg_path: str, save_path: str):
+    """Copy cfgfile to the path"""
+    with open(cfg_path, 'r') as file:
+        cfg = file.read()
+    with open(os.path.join(save_path,"cfg.yaml"), 'w') as file:
+        file.write(cfg)

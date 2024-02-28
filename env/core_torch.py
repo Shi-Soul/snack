@@ -179,6 +179,7 @@ class VectorizedSnakeEnv(SnakeEnv):
         self.state = torch.tensor([])
         self.time_step = torch.tensor([])
         self.death_count = torch.tensor([])
+        self.eat_count = torch.tensor([])
         self.current_length = torch.tensor([])
         
         self._move_kernel =torch.concat([
@@ -194,7 +195,7 @@ class VectorizedSnakeEnv(SnakeEnv):
         
     def get_hidden_state(self) -> \
         Tuple[OBS, ONEDIM, ONEDIM, ONEDIM]:
-        return (self.state, self.time_step, self.current_length, self.death_count)
+        return (self.state, self.time_step, self.eat_count, self.death_count)
     
     def step(self, action: ACT) -> RET: 
         # action: [N,1] int64
@@ -252,6 +253,7 @@ class VectorizedSnakeEnv(SnakeEnv):
         die = torch.logical_or(hit_wall, hit_body)
         hit_food,die = hit_food.to(torch.float32), die.to(torch.float32)
         self.death_count += die
+        self.eat_count += hit_food*(1-die)
         self.current_length = (self.current_length + hit_food) * (1-die) + self.init_length * die
         
         # ACTIVELY RESET
@@ -278,6 +280,7 @@ class VectorizedSnakeEnv(SnakeEnv):
     def reset(self) -> RET:
         self.time_step = torch.zeros((self.n,1),dtype=torch.float32,device=self.device)
         self.death_count = torch.zeros((self.n,1),dtype=torch.float32,device = self.device)
+        self.eat_count = torch.zeros((self.n,1),dtype=torch.float32,device = self.device)
         self.current_length = torch.ones((self.n,1),
                                          dtype=torch.float32,device=self.device) * self.init_length
         

@@ -1,16 +1,18 @@
-exp_name: 'ppo_mid'
+exp_name: 'ppo_mid_rs3_snet'
 seed: 23
 use_tb_logger: True
 
 # Env Related
 obs_channel: 3
-size: 15
-init_length: 4
-max_step: 500
-rew_penalty: -1000
-rew_nothing: -0.2
-rew_food: 50
-rew_difficulty: 10
+env:
+  size: 15
+  init_length: 4
+  max_step: 500
+  rew_penalty: -100
+  rew_nothing: -0.2
+  rew_food: 50
+  rew_difficulty: 10
+  rew_pow_len: 3
 
 
 # Training Related
@@ -44,7 +46,8 @@ ppo:
   num_episodes: 512
   batch_size: 1024
   buffer_size: 600000
-  net: "mid" # small, mid, normal, large
+  net: "small" # small, mid, normal, large
+  # net: "mid" # small, mid, normal, large
   gamma: 0.95
   actor_lr: 0.001
   critic_lr: 0.003

@@ -42,7 +42,7 @@ def _get_nn_xs(out_channel,out_dim=4):
     return policy_net
 
 def _get_nn_small(out_channel,out_dim=4):
-    # Design for 5*5
+    # Design for 5*5, Can also be used for 15*15
     policy_net = nn.Sequential(
             # Input: (batch_size, 3, 5, 5)
             nn.Conv2d(in_channels=out_channel, out_channels=16,
@@ -85,7 +85,7 @@ def _get_nn_mid(out_channel,out_dim=4):
                 # (N, 32*2*2)
             nn.Linear(128, 32),
             nn.SiLU(),
-            nn.Linear(32, 4),
+            nn.Linear(32, out_dim),
         )
     INFO(policy_net)
     INFO("Total parameters: ",sum(p.numel() for p in policy_net.parameters() if p.requires_grad))
@@ -223,7 +223,7 @@ class PPOTrainer(BaseRunner):
                     if self.use_tb:
                         self.tb_logger.log_scalars(result, 'eval', epoch)
                         self.tb_logger.flush()
-                    INFO(f'Epoch: {epoch}, score: {score_mean:.3f} +- {score_std:.3f}, snake_length: {result["snake_length"]:.3f}, die_count: {result["die_count"]:.3f}')
+                    INFO(f'Epoch: {epoch}, score: {score_mean:.3f} +- {score_std:.3f}, eat_count: {result["eat_count"]:.3f}, die_count: {result["die_count"]:.3f}')
         except KeyboardInterrupt:
             INFO("Training interrupted.")
         self.save_model(-1,score_mean,score_std)
@@ -253,9 +253,9 @@ class PPOTrainer(BaseRunner):
         eps_reward.append(reward)
         # eps_state, eps_action, , eps_reward, = torch.stack(eps_state), torch.stack(eps_action), torch.stack(eps_reward)
         eps_state, eps_action, eps_log_action_prob, eps_reward, = torch.stack(eps_state), torch.stack(eps_action), torch.stack(eps_log_action_prob), torch.stack(eps_reward)
-        _,time_step,snake_length,death_count = self.env.get_hidden_state()
+        _,time_step,eat_count,death_count = self.env.get_hidden_state()
         return eps_state, eps_action, eps_log_action_prob, eps_reward, \
-                time_step, snake_length, death_count
+                time_step, eat_count, death_count
         ...
         
     def _sample_episode_single(self):
@@ -384,7 +384,7 @@ class PPOTrainer(BaseRunner):
         self.agent.train(False)
         score = []
         # time_step = torch.tensor([0.],device=self.device)
-        snake_length = torch.tensor([0.],device=self.device)
+        eat_count = torch.tensor([0.],device=self.device)
         die_count = torch.tensor([0.],device=self.device)
         sample = [torch.tensor([0],device=self.device)]  # Assign a default value to "sample"
         eps_score = torch.tensor([0.],device=self.device)
@@ -394,7 +394,7 @@ class PPOTrainer(BaseRunner):
             
             score.append(eps_score)
             # time_step += sample[3].sum()
-            snake_length += sample[4+1].sum()
+            eat_count += sample[4+1].sum()
             die_count += sample[5+1].sum()
             
         print("DEBUG: ",[i.squeeze()[:10] for i in sample[1:]],"\neps_score: ", eps_score)
@@ -405,7 +405,7 @@ class PPOTrainer(BaseRunner):
             'score_mean': s_mean.item(),
             'score_std': std.item(),
             # 'time_step': time_step.item()/N,
-            'snake_length': snake_length.item()/N,
+            'eat_count': eat_count.item()/N,
             'die_count': die_count.item()/N,
         }
         return result

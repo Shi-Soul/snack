@@ -1,4 +1,4 @@
-exp_name: 'ppo_d_rs2'
+exp_name: 'ppo_d_rs3'
 seed: 23
 use_tb_logger: True
 
@@ -12,7 +12,7 @@ env:
   rew_nothing: -0.2
   rew_food: 40
   rew_difficulty: 5
-  # rew_pow_len: 2
+  rew_pow_len: 2
 
 # Training Related
 use_vec_env: True
